@@ -1,0 +1,148 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build a Snowman</title>
+  <style>
+    body {
+      text-align: center;
+      background-color: #eef;
+    }
+    canvas {
+      border: 2px solid black;
+      background-color: white;
+      touch-action: none; /* Prevent scrolling on touchscreens */
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Build Your Own Snowman ⛄</h1>
+  <canvas id="snowmanCanvas" width="800" height="500"></canvas>
+  <br>
+  <button onclick="resetSnowman()">Reset</button>
+<script>
+    const canvas = document.getElementById("snowmanCanvas");
+    const ctx = canvas.getContext("2d");
+    
+    function createDefaultParts() {
+      return {
+        parts: [
+          { x: Math.random() * 200, y: Math.random() * 400, radius: 60, color: "white", draggable: true, snapX: 500, snapY: 250 },  // Bottom Body
+          { x: Math.random() * 200, y: Math.random() * 400, radius: 50, color: "white", draggable: true, snapX: 500, snapY: 160 },  // Middle Body
+          { x: Math.random() * 200, y: Math.random() * 400, radius: 40, color: "white", draggable: true, snapX: 500, snapY: 90 },   // Head
+          { x: Math.random() * 200, y: Math.random() * 400, radius: 10, color: "black", draggable: true, snapX: 480, snapY: 80 },    // Left Eye
+          { x: Math.random() * 200, y: Math.random() * 400, radius: 10, color: "black", draggable: true, snapX: 520, snapY: 80 },    // Right Eye
+          { x: Math.random() * 200, y: Math.random() * 400, width: 15, height: 25, color: "orange", draggable: true, snapX: 500, snapY: 95 }, // Nose
+          { x: Math.random() * 200, y: Math.random() * 400, width: 25, height: 8, color: "black", draggable: true, snapX: 490, snapY: 115 }, // Mouth
+          { x: Math.random() * 200, y: Math.random() * 400, width: 50, height: 10, color: "brown", draggable: true, snapX: 450, snapY: 160 }, // Left Arm
+          { x: Math.random() * 200, y: Math.random() * 400, width: 50, height: 10, color: "brown", draggable: true, snapX: 550, snapY: 160 }, // Right Arm
+          { x: Math.random() * 200, y: Math.random() * 400, width: 40, height: 20, color: "red", draggable: true, snapX: 480, snapY: 45 }, // Hat
+          { x: Math.random() * 200, y: Math.random() * 400, width: 50, height: 20, color: "blue", draggable: true, snapX: 475, snapY: 120 }, // Scarf
+        ]
+      };
+    }
+    
+    let state = createDefaultParts();
+    let draggingPart = null;
+    let offsetX, offsetY;
+    
+    function drawSnowman() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#87CEEB";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Assembly Area on the Right
+      ctx.fillStyle = "#d3d3d3";
+      ctx.fillRect(400, 50, 300, 350);
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Build Your Snowman Here!", 430, 40);
+      
+      state.parts.forEach(part => {
+        ctx.fillStyle = part.color;
+        if (part === draggingPart) {
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = "yellow";
+        }
+        if (part.radius) {
+          ctx.beginPath();
+          ctx.arc(part.x, part.y, part.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillRect(part.x, part.y, part.width, part.height);
+          ctx.strokeRect(part.x, part.y, part.width, part.height);
+        }
+        ctx.shadowBlur = 0;
+      });
+    }
+    
+    function getClickedPart(x, y) {
+      return state.parts.find(part => {
+        if (part.radius) {
+          return Math.sqrt((x - part.x) ** 2 + (y - part.y) ** 2) < part.radius;
+        } else {
+          return x >= part.x && x <= part.x + part.width && y >= part.y && y <= part.y + part.height;
+        }
+      });
+    }
+    
+    function startDragging(x, y) {
+      draggingPart = getClickedPart(x, y);
+      if (draggingPart) {
+        offsetX = x - draggingPart.x;
+        offsetY = y - draggingPart.y;
+      }
+    }
+    
+    function moveDragging(x, y) {
+      if (!draggingPart) return;
+      draggingPart.x = x - offsetX;
+      draggingPart.y = y - offsetY;
+      drawSnowman();
+    }
+    
+    function stopDragging() {
+      draggingPart = null;
+    }
+
+    // Mouse Events
+    canvas.addEventListener("mousedown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      startDragging(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      moveDragging(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    
+    canvas.addEventListener("mouseup", stopDragging);
+
+    // Touch Events for iPad Support
+    canvas.addEventListener("touchstart", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      startDragging(touch.clientX - rect.left, touch.clientY - rect.top);
+      e.preventDefault();
+    });
+
+    canvas.addEventListener("touchmove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      moveDragging(touch.clientX - rect.left, touch.clientY - rect.top);
+      e.preventDefault();
+    });
+
+    canvas.addEventListener("touchend", stopDragging);
+    
+    drawSnowman();
+</script>
+</body>
+</html>
